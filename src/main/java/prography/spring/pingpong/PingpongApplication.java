@@ -1,4 +1,4 @@
-package com.prography.spring.pingpong;
+package prography.spring.pingpong;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

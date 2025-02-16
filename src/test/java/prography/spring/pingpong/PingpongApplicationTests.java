@@ -1,4 +1,4 @@
-package com.prography.spring.pingpong;
+package prography.spring.pingpong;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
