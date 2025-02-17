@@ -32,59 +32,66 @@ public class RoomService {
         log.info("📌 [RoomService] 방 생성 요청 (userId={}, roomType={}, title={})",
                 requestDto.userId(), requestDto.roomType(), requestDto.title());
 
-        // 유저 조회
-        User user = userRepository.findById(requestDto.userId()).orElse(null);
+        User user = validateUser(requestDto.userId());
+        if (user == null) return ApiResponse.badRequest();
+
+        RoomType roomType = parseRoomType(requestDto.roomType());
+        if (roomType == null) return ApiResponse.badRequest();
+
+        Room room = createNewRoom(user, requestDto.title(), roomType);
+        log.info("✅ [RoomService] 방 생성 완료 (roomId={})", room.getId());
+
+        assignUserToRoom(user, room);
+        log.info("✅ [RoomService] UserRoom 등록 완료 (userId={}, roomId={})",
+                user.getId(), room.getId());
+
+        return ApiResponse.success(null);
+    }
+
+    private User validateUser(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
-            log.error("🚨 [RoomService] 유저를 찾을 수 없음. (userId={})",requestDto.userId());
-            return ApiResponse.badRequest();
+            log.error("🚨 [RoomService] 유저를 찾을 수 없음. (userId={})", userId);
+            return null;
         }
-
-        // 유저 상태 확인
         if (user.getUserstatus() != UserStatus.ACTIVE) {
-            log.warn("🚨 [RoomService] 유저 상태가 ACTIVE가 아님. (userId={})",requestDto.userId());
-            return ApiResponse.badRequest();
+            log.warn("🚨 [RoomService] 유저 상태가 ACTIVE가 아님. (userId={})", userId);
+            return null;
         }
-
-        // 유저가 이미 참여한 방이 있는지 확인
-        boolean isUserInRoom = userRoomRepository.existsByUser(user);
-        if (isUserInRoom) {
-            log.warn("🚨 [RoomService] 유저가 이미 다른 방에 참여 중. (userId={})",requestDto.userId());
-            return ApiResponse.badRequest();
+        if (userRoomRepository.existsByUser(user)) {
+            log.warn("🚨 [RoomService] 유저가 이미 다른 방에 참여 중. (userId={})", userId);
+            return null;
         }
+        return user;
+    }
 
-        // 방 타입 변환
-        RoomType roomType;
+    private RoomType parseRoomType(String roomTypeStr) {
         try {
-            roomType = RoomType.valueOf(requestDto.roomType().toUpperCase());
+            return RoomType.valueOf(roomTypeStr.toUpperCase());
         } catch (IllegalArgumentException e) {
-            log.error("🚨 [RoomService] 잘못된 방 타입 입력. (roomType={})",requestDto.roomType());
-            return ApiResponse.badRequest();
+            log.error("🚨 [RoomService] 잘못된 방 타입 입력. (roomType={})", roomTypeStr);
+            return null;
         }
+    }
 
-        // 방 생성
+    private Room createNewRoom(User host, String title, RoomType roomType) {
         Room room = Room.builder()
-                .host(user)
-                .title(requestDto.title())
+                .host(host)
+                .title(title)
                 .roomType(roomType)
                 .status(RoomStatus.WAIT)
                 .createdAt(LocalDateTime.now())
-                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
+        return roomRepository.save(room);
+    }
 
-        roomRepository.save(room);
-        log.info("✅ [RoomService] 방 생성 완료 (roomId={})", room.getId());
-
-        // 생성한 유저를 UserRoom 테이블에 추가 (RED팀 우선 배정)
+    private void assignUserToRoom(User user, Room room) {
         UserRoom userRoom = UserRoom.builder()
                 .user(user)
                 .room(room)
                 .team(Team.RED)
                 .build();
-
         userRoomRepository.save(userRoom);
-        log.info("✅ [RoomService] UserRoom 등록 완료 (userId={}, roomId={}, team={})",
-                user.getId(), room.getId(), userRoom.getTeam());
-
-        return ApiResponse.success(null);
     }
 }
