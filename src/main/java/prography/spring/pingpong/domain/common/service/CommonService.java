@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import prography.spring.pingpong.domain.common.model.dto.FakerUserDto;
-import prography.spring.pingpong.domain.common.model.dto.FakerUserDto.FakerUser;
 import prography.spring.pingpong.domain.common.model.dto.InitRequestDto;
 import prography.spring.pingpong.domain.room.repository.RoomRepository;
 import prography.spring.pingpong.domain.user.model.entity.User;
@@ -30,25 +29,49 @@ public class CommonService {
 
     @Transactional
     public ApiResponse<Void> initializeData(InitRequestDto requestDto) {
-        // 기존 데이터 삭제
-        log.info("📌 [commonService] 모든 데이터 삭제 중");
-        userRoomRepository.deleteAll();
-        userRepository.deleteAll();
-        roomRepository.deleteAll();
+        deleteAllData();
 
-        // Faker API 호출
-        log.info("📌 [commonService] Faker API 호출");
-        String apiUrl = String.format("https://fakerapi.it/api/v1/users?_seed=%d&_quantity=%d&_locale=ko_KR",
-                requestDto.seed(), requestDto.quantity());
-        FakerUserDto response = restTemplate.getForObject(apiUrl, FakerUserDto.class);
-
-        if (response == null || response.getData() == null) {
+        List<FakerUserDto.FakerUser> fakerUsers = fetchFakerUsers(requestDto);
+        if (fakerUsers == null) {
             return ApiResponse.serverError();
         }
 
-        List<FakerUserDto.FakerUser> fakerUsers = response.getData();
+        List<User> users = convertToUserEntities(fakerUsers);
+        userRepository.saveAll(users);
+        log.info("✅ [Common] User 데이터 저장 완료");
+
+        return ApiResponse.success(null);
+    }
+
+    private void deleteAllData() {
+        log.info("📌 [CommonService] 모든 데이터 삭제 중...");
+        userRoomRepository.deleteAll();
+        userRepository.deleteAll();
+        roomRepository.deleteAll();
+    }
+
+    private List<FakerUserDto.FakerUser> fetchFakerUsers(InitRequestDto requestDto) {
+        log.info("📌 [CommonService] Faker API 호출 (seed={}, quantity={})", requestDto.seed(), requestDto.quantity());
+
+        String apiUrl = String.format("https://fakerapi.it/api/v1/users?_seed=%d&_quantity=%d&_locale=ko_KR",
+                requestDto.seed(), requestDto.quantity());
+
+        FakerUserDto response = restTemplate.getForObject(apiUrl, FakerUserDto.class);
+
+        if (response == null || response.getData() == null) {
+            log.error("🚨 [CommonService] Faker API 응답 없음");
+            return null;
+        }
+
+        log.info("✅ [CommonService] Faker API 응답 성공 (총 {}명)", response.getData().size());
+        return response.getData();
+    }
+
+    private List<User> convertToUserEntities(List<FakerUserDto.FakerUser> fakerUsers) {
+        log.info("📌 [CommonService] User 엔티티 변환 중...");
+
         List<User> users = fakerUsers.stream()
-                .sorted(Comparator.comparingInt(FakerUser::getId))
+                .sorted(Comparator.comparingInt(FakerUserDto.FakerUser::getId)) // fakerId 기준 정렬
                 .map(fakerUser -> {
                     UserStatus status;
                     if (fakerUser.getId() <= 30) {
@@ -58,6 +81,7 @@ public class CommonService {
                     } else {
                         status = UserStatus.NON_ACTIVE;
                     }
+
                     return User.builder()
                             .fakerId(fakerUser.getId())
                             .name(fakerUser.getUsername())
@@ -66,12 +90,9 @@ public class CommonService {
                             .createdAt(LocalDateTime.now())
                             .updatedAt(LocalDateTime.now())
                             .build();
-                    }
-                ).toList();
+                }).toList();
 
-        userRepository.saveAll(users);
-        log.info("✅ [Common] User 데이터 저장 완료");
-
-        return ApiResponse.success(null);
+        log.info("✅ [CommonService] User 엔티티 변환 완료 (총 {}명)", users.size());
+        return users;
     }
 }
