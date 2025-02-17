@@ -1,8 +1,9 @@
-package prography.spring.pingpong.model.entity;
+package prography.spring.pingpong.domain.user.model.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
+import prography.spring.pingpong.model.entity.UserStatus;
 
 @Entity
 @Getter

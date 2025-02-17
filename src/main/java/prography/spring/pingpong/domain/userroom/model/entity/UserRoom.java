@@ -1,7 +1,10 @@
-package prography.spring.pingpong.model.entity;
+package prography.spring.pingpong.domain.userroom.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import prography.spring.pingpong.domain.room.model.entity.Room;
+import prography.spring.pingpong.domain.user.model.entity.User;
+import prography.spring.pingpong.model.entity.Team;
 
 @Entity
 @Getter
