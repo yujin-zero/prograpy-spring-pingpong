@@ -1,11 +1,14 @@
 package prography.spring.pingpong.domain.room.service;
 
-import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
-import prography.spring.pingpong.domain.room.model.dto.RoomCreateRequestDto;
+import org.springframework.transaction.annotation.Transactional;
+import prography.spring.pingpong.domain.room.model.dto.*;
 import prography.spring.pingpong.domain.room.model.entity.Room;
 import prography.spring.pingpong.domain.room.repository.RoomRepository;
 import prography.spring.pingpong.domain.user.model.entity.User;
@@ -13,10 +16,7 @@ import prography.spring.pingpong.domain.user.repository.UserRepository;
 import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
 import prography.spring.pingpong.domain.userroom.repository.UserRoomRepository;
 import prography.spring.pingpong.model.dto.ApiResponse;
-import prography.spring.pingpong.model.entity.RoomStatus;
-import prography.spring.pingpong.model.entity.RoomType;
-import prography.spring.pingpong.model.entity.Team;
-import prography.spring.pingpong.model.entity.UserStatus;
+import prography.spring.pingpong.model.entity.*;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -93,5 +93,16 @@ public class RoomService {
                 .team(Team.RED)
                 .build();
         userRoomRepository.save(userRoom);
+    }
+
+    @Transactional(readOnly = true)
+    public ApiResponse<RoomListResponseDto> getAllRooms(int page, int size) {
+        log.info("📌 [RoomService] 방 전체 조회 요청");
+
+        PageRequest pageRequest = PageRequest.of(page, size, Direction.ASC,"id");
+        Page<RoomResponseDto> roomPage = roomRepository.findAll(pageRequest)
+                .map(RoomResponseDto::fromEntity);
+
+        return ApiResponse.success(RoomListResponseDto.fromPage(roomPage));
     }
 }
