@@ -4,10 +4,12 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import prography.spring.pingpong.domain.room.model.entity.Room;
 import prography.spring.pingpong.domain.room.repository.RoomRepository;
 import prography.spring.pingpong.domain.user.model.entity.User;
 import prography.spring.pingpong.domain.user.repository.UserRepository;
+import prography.spring.pingpong.domain.userroom.model.dto.RoomExitRequestDto;
 import prography.spring.pingpong.domain.userroom.model.dto.RoomJoinRequestDto;
 import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
 import prography.spring.pingpong.domain.userroom.repository.UserRoomRepository;
@@ -25,6 +27,7 @@ public class UserRoomService {
     private final RoomRepository roomRepository;
     private final UserRoomRepository userRoomRepository;
 
+    @Transactional
     public ApiResponse<Void> joinRoom(Long roomId, RoomJoinRequestDto request) {
         log.info("📌 [UserRoomService] 방 참가 요청");
 
@@ -68,6 +71,41 @@ public class UserRoomService {
         userRoomRepository.save(userRoom);
 
         log.info("✅ [UserRoomService] 방 참가 완료");
+        return ApiResponse.success(null);
+    }
+
+    @Transactional
+    public ApiResponse<Void> exitRoom(Long roomId, RoomExitRequestDto request) {
+        log.info("📌 [UserRoomService] 방 나가기 요청");
+
+        Room room = roomRepository.findById(roomId).orElse(null);
+        if (room == null) {
+            return ApiResponse.badRequest();
+        }
+
+        if (room.getStatus() == RoomStatus.PROGRESS || room.getStatus() == RoomStatus.FINISH) {
+            return ApiResponse.badRequest();
+        }
+
+        User user = userRepository.findById(request.userId()).orElse(null);
+        if (user == null) {
+            return ApiResponse.badRequest();
+        }
+
+        UserRoom userRoom = (UserRoom) userRoomRepository.findByUserAndRoom(user, room).orElse(null);
+        if (userRoom == null) {
+            return ApiResponse.badRequest();
+        }
+
+        if (room.getHost().equals(user)) {
+            userRoomRepository.deleteByRoom(room);
+            room.setStatus(RoomStatus.FINISH);
+            roomRepository.save(room);
+            return ApiResponse.success(null);
+        }
+
+        userRoomRepository.delete(userRoom);
+
         return ApiResponse.success(null);
     }
 }
