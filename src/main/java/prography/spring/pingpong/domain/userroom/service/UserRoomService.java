@@ -11,6 +11,7 @@ import prography.spring.pingpong.domain.user.model.entity.User;
 import prography.spring.pingpong.domain.user.repository.UserRepository;
 import prography.spring.pingpong.domain.userroom.model.dto.RoomExitRequestDto;
 import prography.spring.pingpong.domain.userroom.model.dto.RoomJoinRequestDto;
+import prography.spring.pingpong.domain.userroom.model.dto.TeamChangeRequestDto;
 import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
 import prography.spring.pingpong.domain.userroom.repository.UserRoomRepository;
 import prography.spring.pingpong.model.dto.ApiResponse;
@@ -105,6 +106,45 @@ public class UserRoomService {
         }
 
         userRoomRepository.delete(userRoom);
+
+        return ApiResponse.success(null);
+    }
+
+    @Transactional
+    public ApiResponse<Void> changeTeam(Long roomId, TeamChangeRequestDto requestDto) {
+        Room room = roomRepository.findById(roomId).orElse(null);
+        if (room == null) {
+            return ApiResponse.badRequest();
+        }
+
+        if (room.getStatus() != RoomStatus.WAIT) {
+            return ApiResponse.badRequest();
+        }
+
+        User user = userRepository.findById(requestDto.userId()).orElse(null);
+        if (user == null) {
+            return ApiResponse.badRequest();
+        }
+
+        UserRoom userRoom = userRoomRepository.findByUserAndRoom(user, room).orElse(null);
+        if (userRoom == null) {
+            return ApiResponse.badRequest();
+        }
+
+        List<UserRoom> userRooms = userRoomRepository.findByRoom(room);
+        int maxCapacity = room.getRoomType() == RoomType.SINGLE ? 2 : 4;
+        long redCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.RED).count();
+        long blueCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.BLUE).count();
+
+        Team currentTeam = userRoom.getTeam();
+        Team newTeam = (currentTeam == Team.RED) ? Team.BLUE : Team.RED;
+        if ((newTeam == Team.RED && redCount >= maxCapacity/2) ||
+                (newTeam == Team.BLUE && blueCount >= maxCapacity/2)) {
+            return ApiResponse.badRequest();
+        }
+
+        userRoom.setTeam(newTeam);
+        userRoomRepository.save(userRoom);
 
         return ApiResponse.success(null);
     }
