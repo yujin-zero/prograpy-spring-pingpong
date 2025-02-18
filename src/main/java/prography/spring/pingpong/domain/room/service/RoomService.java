@@ -105,4 +105,17 @@ public class RoomService {
 
         return ApiResponse.success(RoomListResponseDto.fromPage(roomPage));
     }
+
+    @Transactional(readOnly = true)
+    public ApiResponse<RoomDetailResponseDto> getRoomDetail(Long roomId) {
+        log.info("📌 [RoomService] 방 상세 조회 요청");
+
+        Room room = roomRepository.findById(roomId).orElse(null);
+        if (room == null) {
+            log.warn("🚨 [RoomService] 존재하지 않는 방 (roomId={})", roomId);
+        }
+
+        assert room != null;
+        return ApiResponse.success(RoomDetailResponseDto.fromEntity(room));
+    }
 }
