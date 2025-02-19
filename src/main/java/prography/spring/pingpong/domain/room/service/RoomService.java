@@ -118,4 +118,12 @@ public class RoomService {
         assert room != null;
         return ApiResponse.success(RoomDetailResponseDto.fromEntity(room));
     }
+
+    public boolean isRoomValidForGame(Long roomId) {
+        Room room = roomRepository.findById(roomId).orElse(null);
+        if (room == null) {
+            return false;
+        }
+        return room.getStatus() == RoomStatus.WAIT;
+    }
 }

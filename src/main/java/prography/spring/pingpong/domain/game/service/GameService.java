@@ -11,8 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import prography.spring.pingpong.domain.game.model.dto.GameStartRequestDto;
 import prography.spring.pingpong.domain.room.model.entity.Room;
 import prography.spring.pingpong.domain.room.repository.RoomRepository;
-import prography.spring.pingpong.domain.user.model.entity.User;
+import prography.spring.pingpong.domain.room.service.RoomService;
 import prography.spring.pingpong.domain.user.repository.UserRepository;
+import prography.spring.pingpong.domain.user.service.UserService;
 import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
 import prography.spring.pingpong.domain.userroom.repository.UserRoomRepository;
 import prography.spring.pingpong.model.dto.ApiResponse;
@@ -28,6 +29,8 @@ public class GameService {
     private final UserRepository userRepository;
     private final UserRoomRepository userRoomRepository;
     private final GameTransactionService gameTransactionService;
+    private final RoomService roomService;
+    private final UserService userService;
 
     @Value("${game.duration-ms}")
     private long gameDurationMs;
@@ -41,7 +44,7 @@ public class GameService {
     @Transactional
     public ApiResponse<Void> startGame(Long roomId, GameStartRequestDto request) {
         Room room = roomRepository.findById(roomId).orElse(null);
-        if (room == null || !isHostUser(room, request.userId()) || !isRoomReadyForGame(room)) {
+        if (!roomService.isRoomValidForGame(roomId) || !userService.isValidHost(roomId, request.userId())) {
             return ApiResponse.badRequest();
         }
 
@@ -60,20 +63,6 @@ public class GameService {
         scheduleGameEnd(roomId);
 
         return ApiResponse.success(null);
-    }
-
-    private boolean isHostUser(Room room, Long userId) {
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            log.warn("🚨 [GameService] 사용자 없음 (userId={})", userId);
-            return false;
-        }
-        return room.getHost().equals(user);
-    }
-
-    private boolean isRoomReadyForGame(Room room) {
-        log.warn("🚨 [GameService] 방이 게임 준비 상태가 아님 (roomId={})", room.getId());
-        return room.getStatus() == RoomStatus.WAIT;
     }
 
     @Async
