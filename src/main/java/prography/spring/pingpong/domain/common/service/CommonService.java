@@ -27,6 +27,8 @@ public class CommonService {
     private final UserRoomRepository userRoomRepository;
     private final RestTemplate restTemplate;
 
+    private static final String FAKE_API_URL = "https://fakerapi.it/api/v1/users?_seed=%d&_quantity=%d&_locale=ko_KR";
+
     @Transactional
     public ApiResponse<Void> initializeData(InitRequestDto requestDto) {
         deleteAllData();
@@ -38,7 +40,7 @@ public class CommonService {
 
         List<User> users = convertToUserEntities(fakerUsers);
         userRepository.saveAll(users);
-        log.info("✅ [Common] User 데이터 저장 완료");
+        log.info("✅ [CommonService] User 데이터 저장 완료");
 
         return ApiResponse.success(null);
     }
@@ -53,7 +55,7 @@ public class CommonService {
     private List<FakerUserDto.FakerUser> fetchFakerUsers(InitRequestDto requestDto) {
         log.info("📌 [CommonService] Faker API 호출 (seed={}, quantity={})", requestDto.seed(), requestDto.quantity());
 
-        String apiUrl = String.format("https://fakerapi.it/api/v1/users?_seed=%d&_quantity=%d&_locale=ko_KR",
+        String apiUrl = String.format(FAKE_API_URL,
                 requestDto.seed(), requestDto.quantity());
 
         FakerUserDto response = restTemplate.getForObject(apiUrl, FakerUserDto.class);
@@ -73,14 +75,7 @@ public class CommonService {
         List<User> users = fakerUsers.stream()
                 .sorted(Comparator.comparingInt(FakerUserDto.FakerUser::getId)) // fakerId 기준 정렬
                 .map(fakerUser -> {
-                    UserStatus status;
-                    if (fakerUser.getId() <= 30) {
-                        status = UserStatus.ACTIVE;
-                    } else if (fakerUser.getId() <= 60) {
-                        status = UserStatus.WAIT;
-                    } else {
-                        status = UserStatus.NON_ACTIVE;
-                    }
+                    UserStatus status = determineUserStatus(fakerUser.getId());
 
                     return User.builder()
                             .fakerId(fakerUser.getId())
@@ -94,5 +89,15 @@ public class CommonService {
 
         log.info("✅ [CommonService] User 엔티티 변환 완료 (총 {}명)", users.size());
         return users;
+    }
+
+    private UserStatus determineUserStatus(int userId) {
+        if (userId <= 30) {
+            return UserStatus.ACTIVE;
+        } else if (userId <= 60) {
+            return UserStatus.WAIT;
+        } else {
+            return UserStatus.NON_ACTIVE;
+        }
     }
 }

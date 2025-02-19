@@ -31,35 +31,39 @@ public class GameService {
     @Transactional
     public ApiResponse<Void> startGame(Long roomId, GameStartRequestDto request) {
         Room room = roomRepository.findById(roomId).orElse(null);
-        if (room == null) {
-            return ApiResponse.badRequest();
-        }
-
-        User user = userRepository.findById(request.userId()).orElse(null);
-        if (user == null) {
-            return ApiResponse.badRequest();
-        }
-
-        if (!room.getHost().equals(user)) {
+        if (room == null || !isHostUser(room, request.userId()) || !isRoomReadyForGame(room)) {
             return ApiResponse.badRequest();
         }
 
         List<UserRoom> userRooms = userRoomRepository.findByRoom(room);
         int maxCapacity = (room.getRoomType() == RoomType.SINGLE) ? 2 : 4;
         if (userRooms.size() < maxCapacity) {
-            return ApiResponse.badRequest();
-        }
-
-        if (room.getStatus() != RoomStatus.WAIT) {
+            log.warn("🚨 [GameService] 방에 필요한 사용자 수가 채워지지 않음 (userRoomsSize={}, maxCapacity={})",
+                    userRooms.size(), maxCapacity);
             return ApiResponse.badRequest();
         }
 
         room.setStatus(RoomStatus.PROGRESS);
         roomRepository.save(room);
+        log.info("✅ [GameService] 게임 시작됨 (roomId={})", roomId);
 
         scheduleGameEnd(roomId);
 
         return ApiResponse.success(null);
+    }
+
+    private boolean isHostUser(Room room, Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            log.warn("🚨 [GameService] 사용자 없음 (userId={})", userId);
+            return false;
+        }
+        return room.getHost().equals(user);
+    }
+
+    private boolean isRoomReadyForGame(Room room) {
+        log.warn("🚨 [GameService] 방이 게임 준비 상태가 아님 (roomId={})", room.getId());
+        return room.getStatus() == RoomStatus.WAIT;
     }
 
     @Async

@@ -21,16 +21,16 @@ public class GameTransactionService {
     public void endGameTransactional(Long roomId) {
         Room room = roomRepository.findById(roomId).orElse(null);
         if (room == null || room.getStatus() != RoomStatus.PROGRESS) {
-            log.warn("🚨 [GameService] 종료할 방이 없음 또는 이미 종료됨 (roomId={})", roomId);
+            log.warn("🚨 [GameTransactionService] 종료할 방이 없음 또는 이미 종료됨 (roomId={})", roomId);
             return;
         }
 
         room.setStatus(RoomStatus.FINISH);
 
-        log.info("⏳ [GameService] 방 종료 시, 모든 유저 제거 (roomId={})", roomId);
+        log.info("⏳ [GameTransactionService] 방 종료 시, 모든 유저 제거 (roomId={})", roomId);
         userRoomRepository.deleteByRoom(room);
 
         roomRepository.save(room);
-        log.info("✅ [GameService] 게임 종료 및 모든 유저 제거 완료 (roomId={})", roomId);
+        log.info("✅ [GameTransactionService] 게임 종료 및 모든 유저 제거 완료 (roomId={})", roomId);
     }
 }
