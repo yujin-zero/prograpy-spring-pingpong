@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -27,7 +28,8 @@ public class CommonService {
     private final UserRoomRepository userRoomRepository;
     private final RestTemplate restTemplate;
 
-    private static final String FAKE_API_URL = "https://fakerapi.it/api/v1/users?_seed=%d&_quantity=%d&_locale=ko_KR";
+    @Value("${faker.api-url}")
+    private  String FAKE_API_URL;
 
     @Transactional
     public ApiResponse<Void> initializeData(InitRequestDto requestDto) {

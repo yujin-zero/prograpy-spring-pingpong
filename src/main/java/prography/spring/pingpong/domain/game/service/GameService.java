@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,15 @@ public class GameService {
     private final UserRoomRepository userRoomRepository;
     private final GameTransactionService gameTransactionService;
 
+    @Value("${game.duration-ms}")
+    private long gameDurationMs;
+
+    @Value("${room.max-capacity.single}")
+    private int maxCapacitySingle;
+
+    @Value("${room.max-capacity.multi}")
+    private int maxCapacityMulti;
+
     @Transactional
     public ApiResponse<Void> startGame(Long roomId, GameStartRequestDto request) {
         Room room = roomRepository.findById(roomId).orElse(null);
@@ -36,7 +46,7 @@ public class GameService {
         }
 
         List<UserRoom> userRooms = userRoomRepository.findByRoom(room);
-        int maxCapacity = (room.getRoomType() == RoomType.SINGLE) ? 2 : 4;
+        int maxCapacity = getMaxCapacity(room.getRoomType());
         if (userRooms.size() < maxCapacity) {
             log.warn("🚨 [GameService] 방에 필요한 사용자 수가 채워지지 않음 (userRoomsSize={}, maxCapacity={})",
                     userRooms.size(), maxCapacity);
@@ -71,12 +81,16 @@ public class GameService {
         CompletableFuture.runAsync(() -> {
             try {
                 log.info("⏳ [GameService] 게임 종료 스케줄링 시작 (roomId={})", roomId);
-                Thread.sleep(60 * 1000);
+                Thread.sleep(gameDurationMs);
                 gameTransactionService.endGameTransactional(roomId);
             } catch (InterruptedException e) {
                 log.error("🚨 [GameService] 게임 종료 스케줄링 오류 (roomId={})", roomId, e);
                 Thread.currentThread().interrupt();
             }
         });
+    }
+
+    public int getMaxCapacity(RoomType roomType) {
+        return (roomType == RoomType.SINGLE) ? maxCapacitySingle : maxCapacityMulti;
     }
 }

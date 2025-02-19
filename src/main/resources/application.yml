@@ -15,3 +15,14 @@ spring:
     console:
       enabled: true
       path: /h2-console
+
+faker:
+  api-url: "https://fakerapi.it/api/v1/users?_seed=%d&_quantity=%d&_locale=ko_KR"
+
+game:
+  duration-ms: 60000 # 60초
+
+room:
+  max-capacity:
+    single: 2
+    multi: 4
