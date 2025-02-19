@@ -33,24 +33,12 @@ public class UserRoomService {
         log.info("📌 [UserRoomService] 방 참가 요청");
 
         Room room = roomRepository.findById(roomId).orElse(null);
-        if (room == null) {
-            log.warn("🚨 [UserRoomService] 존재하지 않는 방 (roomId={})",roomId);
-            return ApiResponse.badRequest();
-        }
-
-        if (room.getStatus() != RoomStatus.WAIT) {
-            log.warn("🚨 [UserRoomService] 방이 WAIT 상태가 아님 (roomId={}, status={})",roomId,room.getStatus());
+        if (room == null || room.getStatus() != RoomStatus.WAIT) {
             return ApiResponse.badRequest();
         }
 
         User user = userRepository.findById(request.userId()).orElse(null);
-        if (user == null) {
-            log.warn("🚨 [UserRoomService] 존재하지 않는 유저 (userId={})",user.getId());
-            return ApiResponse.badRequest();
-        }
-
-        if (userRoomRepository.existsByUser(user)) {
-            log.warn("🚨 [UserRoomService] 유저가 이미 다른 방에 참여 중 (userId={})",user.getId());
+        if (user == null || userRoomRepository.existsByUser(user)) {
             return ApiResponse.badRequest();
         }
 
@@ -61,9 +49,7 @@ public class UserRoomService {
             return ApiResponse.badRequest();
         }
 
-        long redCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.RED).count();
-        Team assignedTeam = (redCount < maxCapacity/2) ? Team.RED : Team.BLUE;
-
+        Team assignedTeam = assignTeam(userRooms, maxCapacity);
         UserRoom userRoom = UserRoom.builder()
                 .user(user)
                 .room(room)
@@ -80,20 +66,16 @@ public class UserRoomService {
         log.info("📌 [UserRoomService] 방 나가기 요청");
 
         Room room = roomRepository.findById(roomId).orElse(null);
-        if (room == null) {
+        if (room == null || room.getStatus() == RoomStatus.PROGRESS || room.getStatus() == RoomStatus.FINISH) {
             return ApiResponse.badRequest();
         }
 
-        if (room.getStatus() == RoomStatus.PROGRESS || room.getStatus() == RoomStatus.FINISH) {
-            return ApiResponse.badRequest();
-        }
-
-        User user = userRepository.findById(request.userId()).orElse(null);
+        User user = getUserById(request.userId());
         if (user == null) {
             return ApiResponse.badRequest();
         }
 
-        UserRoom userRoom = (UserRoom) userRoomRepository.findByUserAndRoom(user, room).orElse(null);
+        UserRoom userRoom = getUserRoom(user, room);
         if (userRoom == null) {
             return ApiResponse.badRequest();
         }
@@ -102,31 +84,27 @@ public class UserRoomService {
             userRoomRepository.deleteByRoom(room);
             room.setStatus(RoomStatus.FINISH);
             roomRepository.save(room);
-            return ApiResponse.success(null);
+        } else {
+            userRoomRepository.delete(userRoom);
         }
-
-        userRoomRepository.delete(userRoom);
-
         return ApiResponse.success(null);
     }
 
     @Transactional
     public ApiResponse<Void> changeTeam(Long roomId, TeamChangeRequestDto requestDto) {
+        log.info("📌 [UserRoomService] 팀 변경 요청");
+
         Room room = roomRepository.findById(roomId).orElse(null);
-        if (room == null) {
+        if (room == null || room.getStatus() != RoomStatus.WAIT) {
             return ApiResponse.badRequest();
         }
 
-        if (room.getStatus() != RoomStatus.WAIT) {
-            return ApiResponse.badRequest();
-        }
-
-        User user = userRepository.findById(requestDto.userId()).orElse(null);
+        User user = getUserById(requestDto.userId());
         if (user == null) {
             return ApiResponse.badRequest();
         }
 
-        UserRoom userRoom = userRoomRepository.findByUserAndRoom(user, room).orElse(null);
+        UserRoom userRoom = getUserRoom(user, room);
         if (userRoom == null) {
             return ApiResponse.badRequest();
         }
@@ -136,8 +114,7 @@ public class UserRoomService {
         long redCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.RED).count();
         long blueCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.BLUE).count();
 
-        Team currentTeam = userRoom.getTeam();
-        Team newTeam = (currentTeam == Team.RED) ? Team.BLUE : Team.RED;
+        Team newTeam = (userRoom.getTeam() == Team.RED) ? Team.BLUE : Team.RED;
         if ((newTeam == Team.RED && redCount >= maxCapacity/2) ||
                 (newTeam == Team.BLUE && blueCount >= maxCapacity/2)) {
             return ApiResponse.badRequest();
@@ -147,5 +124,22 @@ public class UserRoomService {
         userRoomRepository.save(userRoom);
 
         return ApiResponse.success(null);
+    }
+
+    private Room getRoomById(Long roomId) {
+        return roomRepository.findById(roomId).orElse(null);
+    }
+
+    private User getUserById(Long userId) {
+        return userRepository.findById(userId).orElse(null);
+    }
+
+    private UserRoom getUserRoom(User user, Room room) {
+        return userRoomRepository.findByUserAndRoom(user, room).orElse(null);
+    }
+
+    private Team assignTeam(List<UserRoom> userRooms, int maxCapacity) {
+        long redCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.RED).count();
+        return (redCount < maxCapacity / 2) ? Team.RED : Team.BLUE;
     }
 }

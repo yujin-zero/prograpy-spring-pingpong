@@ -2,7 +2,6 @@ package prography.spring.pingpong.domain.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -11,7 +10,6 @@ import prography.spring.pingpong.domain.user.model.dto.UserListResponseDto;
 import prography.spring.pingpong.domain.user.service.UserService;
 import prography.spring.pingpong.model.dto.ApiResponse;
 
-@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/user")
@@ -24,7 +22,6 @@ public class UserController {
     public ApiResponse<UserListResponseDto> getAllUsers(
             @RequestParam int page,
             @RequestParam int size) {
-        log.info("📢 [User] /user API 호출됨");
         return userService.getAllUsers(page, size);
     }
 }
