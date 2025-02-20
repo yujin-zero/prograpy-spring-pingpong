@@ -1,55 +1,50 @@
 package prography.spring.pingpong.domain.game.service;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import prography.spring.pingpong.domain.game.event.GameStartedEvent;
 import prography.spring.pingpong.domain.game.model.dto.GameStartRequestDto;
 import prography.spring.pingpong.domain.room.model.entity.Room;
-import prography.spring.pingpong.domain.room.repository.RoomRepository;
 import prography.spring.pingpong.domain.room.service.RoomService;
-import prography.spring.pingpong.domain.user.repository.UserRepository;
 import prography.spring.pingpong.domain.user.service.UserService;
 import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
-import prography.spring.pingpong.domain.userroom.repository.UserRoomRepository;
+import prography.spring.pingpong.domain.userroom.service.UserRoomService;
 import prography.spring.pingpong.model.dto.ApiResponse;
 import prography.spring.pingpong.model.entity.RoomStatus;
-import prography.spring.pingpong.model.entity.RoomType;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class GameService {
 
-    private final RoomRepository roomRepository;
-    private final UserRepository userRepository;
-    private final UserRoomRepository userRoomRepository;
     private final GameTransactionService gameTransactionService;
-    private final RoomService roomService;
     private final UserService userService;
+    private final RoomService roomService;
+    private final UserRoomService userRoomService;
+    private final ScheduledExecutorService scheduler;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${game.duration-ms}")
     private long gameDurationMs;
 
-    @Value("${room.max-capacity.single}")
-    private int maxCapacitySingle;
-
-    @Value("${room.max-capacity.multi}")
-    private int maxCapacityMulti;
-
     @Transactional
     public ApiResponse<Void> startGame(Long roomId, GameStartRequestDto request) {
-        Room room = roomRepository.findById(roomId).orElse(null);
         if (!roomService.isRoomValidForGame(roomId) || !userService.isValidHost(roomId, request.userId())) {
             return ApiResponse.badRequest();
         }
 
-        List<UserRoom> userRooms = userRoomRepository.findByRoom(room);
-        int maxCapacity = getMaxCapacity(room.getRoomType());
+        Room room = roomService.getRoomById(roomId);
+
+        List<UserRoom> userRooms = userRoomService.getUserRoomsByRoom(room);
+        int maxCapacity = roomService.getMaxCapacity(room.getRoomType());
+
         if (userRooms.size() < maxCapacity) {
             log.warn("🚨 [GameService] 방에 필요한 사용자 수가 채워지지 않음 (userRoomsSize={}, maxCapacity={})",
                     userRooms.size(), maxCapacity);
@@ -57,29 +52,22 @@ public class GameService {
         }
 
         room.setStatus(RoomStatus.PROGRESS);
-        roomRepository.save(room);
+        roomService.updateRoom(room);
         log.info("✅ [GameService] 게임 시작됨 (roomId={})", roomId);
 
-        scheduleGameEnd(roomId);
+        eventPublisher.publishEvent(new GameStartedEvent(roomId));
 
         return ApiResponse.success(null);
     }
 
-    @Async
     public void scheduleGameEnd(Long roomId) {
-        CompletableFuture.runAsync(() -> {
+        scheduler.schedule(() -> {
             try {
-                log.info("⏳ [GameService] 게임 종료 스케줄링 시작 (roomId={})", roomId);
-                Thread.sleep(gameDurationMs);
+                log.info("⏳ [GameService] 게임 종료 실행 (roomId={})", roomId);
                 gameTransactionService.endGameTransactional(roomId);
-            } catch (InterruptedException e) {
-                log.error("🚨 [GameService] 게임 종료 스케줄링 오류 (roomId={})", roomId, e);
-                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                log.error("🚨 [GameService] 게임 종료 중 오류 발생 (roomId={})", roomId, e);
             }
-        });
-    }
-
-    public int getMaxCapacity(RoomType roomType) {
-        return (roomType == RoomType.SINGLE) ? maxCapacitySingle : maxCapacityMulti;
+        }, gameDurationMs, TimeUnit.MILLISECONDS);
     }
 }

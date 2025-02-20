@@ -126,10 +126,6 @@ public class UserRoomService {
         return ApiResponse.success(null);
     }
 
-    private Room getRoomById(Long roomId) {
-        return roomRepository.findById(roomId).orElse(null);
-    }
-
     private User getUserById(Long userId) {
         return userRepository.findById(userId).orElse(null);
     }
@@ -147,5 +143,10 @@ public class UserRoomService {
     public void deleteAllUserRooms() {
         userRoomRepository.deleteAll();
         log.info("✅ [UserRoomService] 모든 UserRoom 데이터 삭제 완료");
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserRoom> getUserRoomsByRoom(Room room) {
+        return userRoomRepository.findByRoom(room);
     }
 }

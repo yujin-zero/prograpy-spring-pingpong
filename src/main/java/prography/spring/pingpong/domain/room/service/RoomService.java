@@ -3,6 +3,7 @@ package prography.spring.pingpong.domain.room.service;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
@@ -26,6 +27,12 @@ public class RoomService {
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final UserRoomRepository userRoomRepository;
+
+    @Value("${room.max-capacity.single}")
+    private int maxCapacitySingle;
+
+    @Value("${room.max-capacity.multi}")
+    private int maxCapacityMulti;
 
     @Transactional
     public ApiResponse<Void> createRoom(RoomCreateRequestDto requestDto) {
@@ -131,5 +138,20 @@ public class RoomService {
     public void deleteAllRooms() {
         roomRepository.deleteAll();
         log.info("✅ [RoomService] 모든 Room 데이터 삭제 완료");
+    }
+
+    @Transactional
+    public Room getRoomById(Long roomId) {
+        return roomRepository.findById(roomId).orElse(null);
+    }
+
+    @Transactional
+    public void updateRoom(Room room) {
+        roomRepository.save(room);
+        log.info("✅ [RoomService] 방 정보 업데이트 완료 (roomId={}, status={})", room.getId(),room.getStatus());
+    }
+
+    public int getMaxCapacity(RoomType roomType) {
+        return (roomType == RoomType.SINGLE) ? maxCapacitySingle : maxCapacityMulti;
     }
 }
