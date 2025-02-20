@@ -149,4 +149,9 @@ public class UserRoomService {
     public List<UserRoom> getUserRoomsByRoom(Room room) {
         return userRoomRepository.findByRoom(room);
     }
+
+    @Transactional
+    public void deleteUserRoomsByRoom(Room room) {
+        userRoomRepository.deleteByRoom(room);
+    }
 }
