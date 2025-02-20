@@ -29,7 +29,7 @@ public class UserResponseDto {
                 .fakerId(user.getFakerId())
                 .name(user.getName())
                 .email(user.getEmail())
-                .status(user.getUserstatus())
+                .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
