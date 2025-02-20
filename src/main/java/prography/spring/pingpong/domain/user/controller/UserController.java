@@ -1,6 +1,7 @@
 package prography.spring.pingpong.domain.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +11,7 @@ import prography.spring.pingpong.domain.user.model.dto.UserListResponseDto;
 import prography.spring.pingpong.domain.user.service.UserService;
 import prography.spring.pingpong.model.dto.ApiResponse;
 
+@Tag(name = "User", description = "유저 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/user")

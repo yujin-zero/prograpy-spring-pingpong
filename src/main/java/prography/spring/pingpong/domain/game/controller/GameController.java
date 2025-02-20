@@ -1,6 +1,7 @@
 package prography.spring.pingpong.domain.game.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.service.OperationService;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +13,7 @@ import prography.spring.pingpong.domain.game.model.dto.GameStartRequestDto;
 import prography.spring.pingpong.domain.game.service.GameService;
 import prography.spring.pingpong.model.dto.ApiResponse;
 
+@Tag(name = "Game", description = "게임 관련 API")
 @RestController
 @RequestMapping("/room")
 @RequiredArgsConstructor

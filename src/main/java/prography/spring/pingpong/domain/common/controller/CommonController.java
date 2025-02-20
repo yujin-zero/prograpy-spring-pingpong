@@ -1,6 +1,7 @@
 package prography.spring.pingpong.domain.common.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,6 +11,7 @@ import prography.spring.pingpong.domain.common.model.dto.InitRequestDto;
 import prography.spring.pingpong.domain.common.service.CommonService;
 import prography.spring.pingpong.model.dto.ApiResponse;
 
+@Tag(name = "Common", description = "공통 서비스 관련 API")
 @RestController
 @RequiredArgsConstructor
 public class CommonController {
