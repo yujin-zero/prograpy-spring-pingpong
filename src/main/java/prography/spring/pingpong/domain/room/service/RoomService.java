@@ -61,7 +61,7 @@ public class RoomService {
             log.error("🚨 [RoomService] 유저를 찾을 수 없음. (userId={})", userId);
             return null;
         }
-        if (user.getUserstatus() != UserStatus.ACTIVE) {
+        if (user.getStatus() != UserStatus.ACTIVE) {
             log.warn("🚨 [RoomService] 유저 상태가 ACTIVE가 아님. (userId={})", userId);
             return null;
         }

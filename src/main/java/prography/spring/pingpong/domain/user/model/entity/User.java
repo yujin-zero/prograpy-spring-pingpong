@@ -22,7 +22,7 @@ public class User {
     private String email;
 
     @Enumerated(EnumType.STRING)
-    private UserStatus userstatus;
+    private UserStatus status;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

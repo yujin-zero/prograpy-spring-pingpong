@@ -57,7 +57,7 @@ public class CommonService {
                             .fakerId(fakerUser.getId())
                             .name(fakerUser.getUsername())
                             .email(fakerUser.getEmail())
-                            .userstatus(status)
+                            .status(status)
                             .createdAt(LocalDateTime.now())
                             .updatedAt(LocalDateTime.now())
                             .build();
