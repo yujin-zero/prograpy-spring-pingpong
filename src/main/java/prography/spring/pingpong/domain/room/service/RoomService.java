@@ -13,7 +13,7 @@ import prography.spring.pingpong.domain.room.model.dto.*;
 import prography.spring.pingpong.domain.room.model.entity.Room;
 import prography.spring.pingpong.domain.room.repository.RoomRepository;
 import prography.spring.pingpong.domain.user.model.entity.User;
-import prography.spring.pingpong.domain.user.repository.UserRepository;
+import prography.spring.pingpong.domain.user.service.UserService;
 import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
 import prography.spring.pingpong.domain.userroom.repository.UserRoomRepository;
 import prography.spring.pingpong.model.dto.ApiResponse;
@@ -24,9 +24,9 @@ import prography.spring.pingpong.model.entity.*;
 @Service
 public class RoomService {
 
-    private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final UserRoomRepository userRoomRepository;
+    private final UserService userService;
 
     @Value("${room.max-capacity.single}")
     private int maxCapacitySingle;
@@ -56,7 +56,7 @@ public class RoomService {
     }
 
     private User validateUser(Long userId) {
-        User user = userRepository.findById(userId).orElse(null);
+        User user = userService.getUserById(userId);
         if (user == null) {
             log.error("🚨 [RoomService] 유저를 찾을 수 없음. (userId={})", userId);
             return null;

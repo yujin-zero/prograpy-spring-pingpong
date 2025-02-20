@@ -6,9 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import prography.spring.pingpong.domain.room.model.entity.Room;
-import prography.spring.pingpong.domain.room.repository.RoomRepository;
+import prography.spring.pingpong.domain.room.service.RoomService;
 import prography.spring.pingpong.domain.user.model.entity.User;
-import prography.spring.pingpong.domain.user.repository.UserRepository;
+import prography.spring.pingpong.domain.user.service.UserService;
 import prography.spring.pingpong.domain.userroom.model.dto.RoomExitRequestDto;
 import prography.spring.pingpong.domain.userroom.model.dto.RoomJoinRequestDto;
 import prography.spring.pingpong.domain.userroom.model.dto.TeamChangeRequestDto;
@@ -16,7 +16,6 @@ import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
 import prography.spring.pingpong.domain.userroom.repository.UserRoomRepository;
 import prography.spring.pingpong.model.dto.ApiResponse;
 import prography.spring.pingpong.model.entity.RoomStatus;
-import prography.spring.pingpong.model.entity.RoomType;
 import prography.spring.pingpong.model.entity.Team;
 
 @Slf4j
@@ -24,26 +23,26 @@ import prography.spring.pingpong.model.entity.Team;
 @Service
 public class UserRoomService {
 
-    private final UserRepository userRepository;
-    private final RoomRepository roomRepository;
+    private final UserService userService;
+    private final RoomService roomService;
     private final UserRoomRepository userRoomRepository;
 
     @Transactional
     public ApiResponse<Void> joinRoom(Long roomId, RoomJoinRequestDto request) {
         log.info("📌 [UserRoomService] 방 참가 요청");
 
-        Room room = roomRepository.findById(roomId).orElse(null);
+        Room room = roomService.getRoomById(roomId);
         if (room == null || room.getStatus() != RoomStatus.WAIT) {
             return ApiResponse.badRequest();
         }
 
-        User user = userRepository.findById(request.userId()).orElse(null);
+        User user = userService.getUserById(request.userId());
         if (user == null || userRoomRepository.existsByUser(user)) {
             return ApiResponse.badRequest();
         }
 
         List<UserRoom> userRooms = userRoomRepository.findByRoom(room);
-        int maxCapacity = room.getRoomType() == RoomType.SINGLE ? 2 : 4;
+        int maxCapacity = roomService.getMaxCapacity(room.getRoomType());
         if (userRooms.size() >= maxCapacity) {
             log.warn("🚨 [UserRoomService] 방 정원이 가득 참 (roomId={})",room.getId());
             return ApiResponse.badRequest();
@@ -55,7 +54,7 @@ public class UserRoomService {
                 .room(room)
                 .team(assignedTeam)
                 .build();
-        userRoomRepository.save(userRoom);
+        updateUserRoom(userRoom);
 
         log.info("✅ [UserRoomService] 방 참가 완료");
         return ApiResponse.success(null);
@@ -65,12 +64,12 @@ public class UserRoomService {
     public ApiResponse<Void> exitRoom(Long roomId, RoomExitRequestDto request) {
         log.info("📌 [UserRoomService] 방 나가기 요청");
 
-        Room room = roomRepository.findById(roomId).orElse(null);
+        Room room = roomService.getRoomById(roomId);
         if (room == null || room.getStatus() == RoomStatus.PROGRESS || room.getStatus() == RoomStatus.FINISH) {
             return ApiResponse.badRequest();
         }
 
-        User user = getUserById(request.userId());
+        User user = userService.getUserById(request.userId());
         if (user == null) {
             return ApiResponse.badRequest();
         }
@@ -83,7 +82,7 @@ public class UserRoomService {
         if (room.getHost().equals(user)) {
             userRoomRepository.deleteByRoom(room);
             room.setStatus(RoomStatus.FINISH);
-            roomRepository.save(room);
+            roomService.updateRoom(room);
         } else {
             userRoomRepository.delete(userRoom);
         }
@@ -91,15 +90,15 @@ public class UserRoomService {
     }
 
     @Transactional
-    public ApiResponse<Void> changeTeam(Long roomId, TeamChangeRequestDto requestDto) {
+    public ApiResponse<Void> changeTeam(Long roomId, TeamChangeRequestDto request) {
         log.info("📌 [UserRoomService] 팀 변경 요청");
 
-        Room room = roomRepository.findById(roomId).orElse(null);
+        Room room = roomService.getRoomById(roomId);
         if (room == null || room.getStatus() != RoomStatus.WAIT) {
             return ApiResponse.badRequest();
         }
 
-        User user = getUserById(requestDto.userId());
+        User user = userService.getUserById(request.userId());
         if (user == null) {
             return ApiResponse.badRequest();
         }
@@ -110,7 +109,7 @@ public class UserRoomService {
         }
 
         List<UserRoom> userRooms = userRoomRepository.findByRoom(room);
-        int maxCapacity = room.getRoomType() == RoomType.SINGLE ? 2 : 4;
+        int maxCapacity = roomService.getMaxCapacity(room.getRoomType());
         long redCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.RED).count();
         long blueCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.BLUE).count();
 
@@ -121,16 +120,13 @@ public class UserRoomService {
         }
 
         userRoom.setTeam(newTeam);
-        userRoomRepository.save(userRoom);
+        updateUserRoom(userRoom);
 
         return ApiResponse.success(null);
     }
 
-    private User getUserById(Long userId) {
-        return userRepository.findById(userId).orElse(null);
-    }
-
-    private UserRoom getUserRoom(User user, Room room) {
+    @Transactional(readOnly = true)
+    public UserRoom getUserRoom(User user, Room room) {
         return userRoomRepository.findByUserAndRoom(user, room).orElse(null);
     }
 
@@ -153,5 +149,22 @@ public class UserRoomService {
     @Transactional
     public void deleteUserRoomsByRoom(Room room) {
         userRoomRepository.deleteByRoom(room);
+    }
+
+    @Transactional
+    public void updateUserRoom(UserRoom userRoom) {
+        userRoomRepository.save(userRoom);
+    }
+
+    public boolean isValidHost(Long roomId, Long userId) {
+        Room room = roomService.getRoomById(roomId);
+        if (room == null) {
+            return false;
+        }
+        User user = userService.getUserById(userId);
+        if (user == null) {
+            return false;
+        }
+        return room.getHost().equals(user);
     }
 }

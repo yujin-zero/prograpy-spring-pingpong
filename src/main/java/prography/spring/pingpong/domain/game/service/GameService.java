@@ -13,7 +13,6 @@ import prography.spring.pingpong.domain.game.event.GameStartedEvent;
 import prography.spring.pingpong.domain.game.model.dto.GameStartRequestDto;
 import prography.spring.pingpong.domain.room.model.entity.Room;
 import prography.spring.pingpong.domain.room.service.RoomService;
-import prography.spring.pingpong.domain.user.service.UserService;
 import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
 import prography.spring.pingpong.domain.userroom.service.UserRoomService;
 import prography.spring.pingpong.model.dto.ApiResponse;
@@ -25,7 +24,6 @@ import prography.spring.pingpong.model.entity.RoomStatus;
 public class GameService {
 
     private final GameTransactionService gameTransactionService;
-    private final UserService userService;
     private final RoomService roomService;
     private final UserRoomService userRoomService;
     private final ScheduledExecutorService scheduler;
@@ -36,7 +34,7 @@ public class GameService {
 
     @Transactional
     public ApiResponse<Void> startGame(Long roomId, GameStartRequestDto request) {
-        if (!roomService.isRoomValidForGame(roomId) || !userService.isValidHost(roomId, request.userId())) {
+        if (!roomService.isRoomValidForGame(roomId) || !userRoomService.isValidHost(roomId, request.userId())) {
             return ApiResponse.badRequest();
         }
 
