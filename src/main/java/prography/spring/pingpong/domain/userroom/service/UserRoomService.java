@@ -142,4 +142,10 @@ public class UserRoomService {
         long redCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.RED).count();
         return (redCount < maxCapacity / 2) ? Team.RED : Team.BLUE;
     }
+
+    @Transactional
+    public void deleteAllUserRooms() {
+        userRoomRepository.deleteAll();
+        log.info("✅ [UserRoomService] 모든 UserRoom 데이터 삭제 완료");
+    }
 }

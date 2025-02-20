@@ -26,3 +26,7 @@ room:
   max-capacity:
     single: 2
     multi: 4
+
+user-status:
+  active-threshold: 30
+  wait-threshold: 60

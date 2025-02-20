@@ -126,4 +126,10 @@ public class RoomService {
         }
         return room.getStatus() == RoomStatus.WAIT;
     }
+
+    @Transactional
+    public void deleteAllRooms() {
+        roomRepository.deleteAll();
+        log.info("✅ [RoomService] 모든 Room 데이터 삭제 완료");
+    }
 }

@@ -1,5 +1,6 @@
 package prography.spring.pingpong.domain.user.service;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -45,6 +46,18 @@ public class UserService {
             return false;
         }
         return room.getHost().equals(user);
+    }
+
+    @Transactional
+    public void deleteAllUsers() {
+        userRepository.deleteAll();
+        log.info("✅ [UserService] 모든 사용자 삭제 완료");
+    }
+
+    @Transactional
+    public void saveAllUsers(List<User> users) {
+        userRepository.saveAll(users);
+        log.info("✅ [UserService] {}명의 사용자 저장 완료", users.size());
     }
 }
 
