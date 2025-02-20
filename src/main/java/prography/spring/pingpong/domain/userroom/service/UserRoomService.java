@@ -31,13 +31,10 @@ public class UserRoomService {
     public ApiResponse<Void> joinRoom(Long roomId, RoomJoinRequestDto request) {
         log.info("📌 [UserRoomService] 방 참가 요청");
 
-        Room room = roomService.getRoomById(roomId);
-        if (room == null || room.getStatus() != RoomStatus.WAIT) {
-            return ApiResponse.badRequest();
-        }
+        Room room = validateRoom(roomId);
+        User user = validateUser(request.userId());
 
-        User user = userService.getUserById(request.userId());
-        if (user == null || userRoomRepository.existsByUser(user)) {
+        if (room == null || user == null || userRoomRepository.existsByUserId(request.userId())) {
             return ApiResponse.badRequest();
         }
 
@@ -64,25 +61,18 @@ public class UserRoomService {
     public ApiResponse<Void> exitRoom(Long roomId, RoomExitRequestDto request) {
         log.info("📌 [UserRoomService] 방 나가기 요청");
 
-        Room room = roomService.getRoomById(roomId);
-        if (room == null || room.getStatus() == RoomStatus.PROGRESS || room.getStatus() == RoomStatus.FINISH) {
-            return ApiResponse.badRequest();
-        }
-
-        User user = userService.getUserById(request.userId());
-        if (user == null) {
-            return ApiResponse.badRequest();
-        }
-
+        Room room = validateRoom(roomId);
+        User user = validateUser(request.userId());
         UserRoom userRoom = getUserRoom(user, room);
-        if (userRoom == null) {
+
+        if (user == null || room == null || userRoom == null) {
             return ApiResponse.badRequest();
         }
 
         if (room.getHost().equals(user)) {
-            userRoomRepository.deleteByRoom(room);
             room.setStatus(RoomStatus.FINISH);
             roomService.updateRoom(room);
+            userRoomRepository.deleteByRoom(room);
         } else {
             userRoomRepository.delete(userRoom);
         }
@@ -93,18 +83,11 @@ public class UserRoomService {
     public ApiResponse<Void> changeTeam(Long roomId, TeamChangeRequestDto request) {
         log.info("📌 [UserRoomService] 팀 변경 요청");
 
-        Room room = roomService.getRoomById(roomId);
-        if (room == null || room.getStatus() != RoomStatus.WAIT) {
-            return ApiResponse.badRequest();
-        }
-
-        User user = userService.getUserById(request.userId());
-        if (user == null) {
-            return ApiResponse.badRequest();
-        }
-
+        Room room = validateRoom(roomId);
+        User user = validateUser(request.userId());
         UserRoom userRoom = getUserRoom(user, room);
-        if (userRoom == null) {
+
+        if (user == null || room == null || userRoom == null) {
             return ApiResponse.badRequest();
         }
 
@@ -114,8 +97,7 @@ public class UserRoomService {
         long blueCount = userRooms.stream().filter(ur -> ur.getTeam() == Team.BLUE).count();
 
         Team newTeam = (userRoom.getTeam() == Team.RED) ? Team.BLUE : Team.RED;
-        if ((newTeam == Team.RED && redCount >= maxCapacity/2) ||
-                (newTeam == Team.BLUE && blueCount >= maxCapacity/2)) {
+        if (isTeamChangeAllowed(newTeam, redCount, blueCount, maxCapacity)) {
             return ApiResponse.badRequest();
         }
 
@@ -123,6 +105,23 @@ public class UserRoomService {
         updateUserRoom(userRoom);
 
         return ApiResponse.success(null);
+    }
+
+    private User validateUser(Long userId) {
+        return userService.getUserById(userId);
+    }
+
+    private Room validateRoom(Long roomId) {
+        Room room = roomService.getRoomById(roomId);
+        if (room == null || room.getStatus() != RoomStatus.WAIT) {
+            return null;
+        }
+        return room;
+    }
+
+    private boolean isTeamChangeAllowed(Team newTeam, long redCount, long blueCount, int maxCapacity) {
+        return !(newTeam == Team.RED && redCount >= maxCapacity / 2) &&
+                !(newTeam == Team.BLUE && blueCount >= maxCapacity / 2);
     }
 
     @Transactional(readOnly = true)
@@ -158,13 +157,6 @@ public class UserRoomService {
 
     public boolean isValidHost(Long roomId, Long userId) {
         Room room = roomService.getRoomById(roomId);
-        if (room == null) {
-            return false;
-        }
-        User user = userService.getUserById(userId);
-        if (user == null) {
-            return false;
-        }
-        return room.getHost().equals(user);
+        return room != null && room.getHost().getId().equals(userId);
     }
 }
