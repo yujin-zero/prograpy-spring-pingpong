@@ -8,13 +8,13 @@ import org.springframework.data.domain.Page;
 @Getter
 @Builder
 public class UserListResponseDto {
-    private long totalElements;
+    private int totalElements;
     private int totalPages;
     private List<UserResponseDto> userList;
 
     public static UserListResponseDto fromPage(Page<UserResponseDto> userPage) {
         return UserListResponseDto.builder()
-                .totalElements(userPage.getTotalElements())
+                .totalElements((int) userPage.getTotalElements())
                 .totalPages(userPage.getTotalPages())
                 .userList(userPage.getContent())
                 .build();

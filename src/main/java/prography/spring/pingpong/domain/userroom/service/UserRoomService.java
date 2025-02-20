@@ -28,7 +28,7 @@ public class UserRoomService {
     private final UserRoomRepository userRoomRepository;
 
     @Transactional
-    public ApiResponse<Void> joinRoom(Long roomId, RoomJoinRequestDto request) {
+    public ApiResponse<Void> joinRoom(int roomId, RoomJoinRequestDto request) {
         log.info("📌 [UserRoomService] 방 참가 요청");
 
         Room room = validateRoom(roomId);
@@ -58,7 +58,7 @@ public class UserRoomService {
     }
 
     @Transactional
-    public ApiResponse<Void> exitRoom(Long roomId, RoomExitRequestDto request) {
+    public ApiResponse<Void> exitRoom(int roomId, RoomExitRequestDto request) {
         log.info("📌 [UserRoomService] 방 나가기 요청");
 
         Room room = validateRoom(roomId);
@@ -80,7 +80,7 @@ public class UserRoomService {
     }
 
     @Transactional
-    public ApiResponse<Void> changeTeam(Long roomId, TeamChangeRequestDto request) {
+    public ApiResponse<Void> changeTeam(int roomId, TeamChangeRequestDto request) {
         log.info("📌 [UserRoomService] 팀 변경 요청");
 
         Room room = validateRoom(roomId);
@@ -107,11 +107,11 @@ public class UserRoomService {
         return ApiResponse.success(null);
     }
 
-    private User validateUser(Long userId) {
+    private User validateUser(int userId) {
         return userService.getUserById(userId);
     }
 
-    private Room validateRoom(Long roomId) {
+    private Room validateRoom(int roomId) {
         Room room = roomService.getRoomById(roomId);
         if (room == null || room.getStatus() != RoomStatus.WAIT) {
             return null;
@@ -155,7 +155,7 @@ public class UserRoomService {
         userRoomRepository.save(userRoom);
     }
 
-    public boolean isValidHost(Long roomId, Long userId) {
+    public boolean isValidHost(int roomId, int userId) {
         Room room = roomService.getRoomById(roomId);
         return room != null && room.getHost().getId().equals(userId);
     }

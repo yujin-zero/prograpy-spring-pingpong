@@ -24,7 +24,7 @@ public class UserRoomController {
     @Operation(summary = "방 참가 API", description = "유저가 특정 방에 참가합니다.")
     @PostMapping("/attention/{roomId}")
     public ApiResponse<Void> joinRoom(
-            @PathVariable Long roomId,
+            @PathVariable int roomId,
             @RequestBody RoomJoinRequestDto requestDto
             ) {
         return userRoomService.joinRoom(roomId, requestDto);
@@ -33,7 +33,7 @@ public class UserRoomController {
     @Operation(summary = "방 나가기 API", description = "유저가 특정 방을 나갑니다.")
     @PostMapping("/out/{roomId}")
     public ApiResponse<Void> exitRoom(
-            @PathVariable Long roomId,
+            @PathVariable int roomId,
             @RequestBody RoomExitRequestDto requestDto
             ) {
         return userRoomService.exitRoom(roomId, requestDto);

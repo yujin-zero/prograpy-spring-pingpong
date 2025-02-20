@@ -18,7 +18,7 @@ public class GameTransactionService {
     private final UserRoomService userRoomService;
 
     @Transactional
-    public void endGameTransactional(Long roomId) {
+    public void endGameTransactional(int roomId) {
         try {
             Room room = roomService.getRoomById(roomId);
             if (room == null || room.getStatus() != RoomStatus.PROGRESS) {

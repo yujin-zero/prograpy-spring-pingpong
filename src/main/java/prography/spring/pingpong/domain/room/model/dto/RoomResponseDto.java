@@ -10,9 +10,9 @@ import prography.spring.pingpong.model.entity.RoomType;
 @Builder
 public class RoomResponseDto {
 
-    private Long id;
+    private Integer id;
     private String title;
-    private Long hostId;
+    private Integer hostId;
     private RoomType roomType;
     private RoomStatus status;
 

@@ -55,7 +55,7 @@ public class RoomService {
         return ApiResponse.success(null);
     }
 
-    private User validateUser(Long userId) {
+    private User validateUser(int userId) {
         User user = userService.getUserById(userId);
         if (user == null) {
             log.error("🚨 [RoomService] 유저를 찾을 수 없음. (userId={})", userId);
@@ -114,7 +114,7 @@ public class RoomService {
     }
 
     @Transactional(readOnly = true)
-    public ApiResponse<RoomDetailResponseDto> getRoomDetail(Long roomId) {
+    public ApiResponse<RoomDetailResponseDto> getRoomDetail(int roomId) {
         log.info("📌 [RoomService] 방 상세 조회 요청");
 
         Room room = roomRepository.findById(roomId).orElse(null);
@@ -126,7 +126,7 @@ public class RoomService {
         return ApiResponse.success(RoomDetailResponseDto.fromEntity(room));
     }
 
-    public boolean isRoomValidForGame(Long roomId) {
+    public boolean isRoomValidForGame(int roomId) {
         Room room = roomRepository.findById(roomId).orElse(null);
         if (room == null) {
             return false;
@@ -141,7 +141,7 @@ public class RoomService {
     }
 
     @Transactional
-    public Room getRoomById(Long roomId) {
+    public Room getRoomById(int roomId) {
         return roomRepository.findById(roomId).orElse(null);
     }
 

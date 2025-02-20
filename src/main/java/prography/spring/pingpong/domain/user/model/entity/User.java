@@ -15,7 +15,7 @@ import prography.spring.pingpong.model.entity.UserStatus;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     private Integer fakerId;
     private String name;

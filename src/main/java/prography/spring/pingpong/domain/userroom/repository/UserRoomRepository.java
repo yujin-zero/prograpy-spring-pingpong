@@ -7,7 +7,7 @@ import prography.spring.pingpong.domain.room.model.entity.Room;
 import prography.spring.pingpong.domain.user.model.entity.User;
 import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
 
-public interface UserRoomRepository extends JpaRepository<UserRoom, Long> {
+public interface UserRoomRepository extends JpaRepository<UserRoom, Integer> {
     boolean existsByUser(User user);
 
     List<UserRoom> findByRoom(Room room);
@@ -16,5 +16,5 @@ public interface UserRoomRepository extends JpaRepository<UserRoom, Long> {
 
     void deleteByRoom(Room room);
 
-    boolean existsByUserId(Long aLong);
+    boolean existsByUserId(int aInteger);
 }

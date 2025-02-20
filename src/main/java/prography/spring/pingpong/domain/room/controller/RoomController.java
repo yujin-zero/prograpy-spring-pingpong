@@ -41,7 +41,7 @@ public class RoomController {
 
     @Operation(summary = "방 상세 조회 API", description = "특정 방의 상세 정보를 반환합니다.")
     @GetMapping("/{roomId}")
-    public ApiResponse<RoomDetailResponseDto> getRoomDetail(@PathVariable Long roomId) {
+    public ApiResponse<RoomDetailResponseDto> getRoomDetail(@PathVariable int roomId) {
         return roomService.getRoomDetail(roomId);
     }
 }

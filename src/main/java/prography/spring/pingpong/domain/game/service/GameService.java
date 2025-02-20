@@ -33,7 +33,7 @@ public class GameService {
     private long gameDurationMs;
 
     @Transactional
-    public ApiResponse<Void> startGame(Long roomId, GameStartRequestDto request) {
+    public ApiResponse<Void> startGame(int roomId, GameStartRequestDto request) {
         if (!roomService.isRoomValidForGame(roomId) || !userRoomService.isValidHost(roomId, request.userId())) {
             return ApiResponse.badRequest();
         }
@@ -58,7 +58,7 @@ public class GameService {
         return ApiResponse.success(null);
     }
 
-    public void scheduleGameEnd(Long roomId) {
+    public void scheduleGameEnd(int roomId) {
         scheduler.schedule(() -> {
             try {
                 log.info("⏳ [GameService] 게임 종료 실행 (roomId={})", roomId);

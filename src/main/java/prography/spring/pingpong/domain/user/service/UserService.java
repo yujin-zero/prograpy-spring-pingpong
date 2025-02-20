@@ -46,7 +46,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public User getUserById(Long userId) {
+    public User getUserById(int userId) {
         return userRepository.findById(userId).orElse(null);
     }
 }

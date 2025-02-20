@@ -23,7 +23,7 @@ public class TeamChangeController {
     @Operation(summary = "팀 변경 API", description = "유저가 특정 방에서 팀을 변경합니다.")
     @PutMapping("/{roomId}")
     public ApiResponse<Void> chageTeam(
-            @PathVariable Long roomId,
+            @PathVariable int roomId,
             @RequestBody TeamChangeRequestDto requestDto
             ) {
         return userRoomService.changeTeam(roomId, requestDto);
