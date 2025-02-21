@@ -1,6 +1,7 @@
 package prography.spring.pingpong.domain.room.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +16,7 @@ import prography.spring.pingpong.domain.room.model.dto.RoomListResponseDto;
 import prography.spring.pingpong.domain.room.service.RoomService;
 import prography.spring.pingpong.model.dto.ApiResponse;
 
+@Tag(name = "Room", description = "방 관련 API")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/room")
@@ -39,7 +41,7 @@ public class RoomController {
 
     @Operation(summary = "방 상세 조회 API", description = "특정 방의 상세 정보를 반환합니다.")
     @GetMapping("/{roomId}")
-    public ApiResponse<RoomDetailResponseDto> getRoomDetail(@PathVariable Long roomId) {
+    public ApiResponse<RoomDetailResponseDto> getRoomDetail(@PathVariable int roomId) {
         return roomService.getRoomDetail(roomId);
     }
 }

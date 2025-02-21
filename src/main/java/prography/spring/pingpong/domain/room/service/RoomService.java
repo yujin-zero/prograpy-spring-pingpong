@@ -3,6 +3,7 @@ package prography.spring.pingpong.domain.room.service;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
@@ -12,7 +13,7 @@ import prography.spring.pingpong.domain.room.model.dto.*;
 import prography.spring.pingpong.domain.room.model.entity.Room;
 import prography.spring.pingpong.domain.room.repository.RoomRepository;
 import prography.spring.pingpong.domain.user.model.entity.User;
-import prography.spring.pingpong.domain.user.repository.UserRepository;
+import prography.spring.pingpong.domain.user.service.UserService;
 import prography.spring.pingpong.domain.userroom.model.entity.UserRoom;
 import prography.spring.pingpong.domain.userroom.repository.UserRoomRepository;
 import prography.spring.pingpong.model.dto.ApiResponse;
@@ -23,9 +24,15 @@ import prography.spring.pingpong.model.entity.*;
 @Service
 public class RoomService {
 
-    private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final UserRoomRepository userRoomRepository;
+    private final UserService userService;
+
+    @Value("${room.max-capacity.single}")
+    private int maxCapacitySingle;
+
+    @Value("${room.max-capacity.multi}")
+    private int maxCapacityMulti;
 
     @Transactional
     public ApiResponse<Void> createRoom(RoomCreateRequestDto requestDto) {
@@ -48,13 +55,13 @@ public class RoomService {
         return ApiResponse.success(null);
     }
 
-    private User validateUser(Long userId) {
-        User user = userRepository.findById(userId).orElse(null);
+    private User validateUser(int userId) {
+        User user = userService.getUserById(userId);
         if (user == null) {
             log.error("🚨 [RoomService] 유저를 찾을 수 없음. (userId={})", userId);
             return null;
         }
-        if (user.getUserstatus() != UserStatus.ACTIVE) {
+        if (user.getStatus() != UserStatus.ACTIVE) {
             log.warn("🚨 [RoomService] 유저 상태가 ACTIVE가 아님. (userId={})", userId);
             return null;
         }
@@ -107,7 +114,7 @@ public class RoomService {
     }
 
     @Transactional(readOnly = true)
-    public ApiResponse<RoomDetailResponseDto> getRoomDetail(Long roomId) {
+    public ApiResponse<RoomDetailResponseDto> getRoomDetail(int roomId) {
         log.info("📌 [RoomService] 방 상세 조회 요청");
 
         Room room = roomRepository.findById(roomId).orElse(null);
@@ -119,11 +126,32 @@ public class RoomService {
         return ApiResponse.success(RoomDetailResponseDto.fromEntity(room));
     }
 
-    public boolean isRoomValidForGame(Long roomId) {
+    public boolean isRoomValidForGame(int roomId) {
         Room room = roomRepository.findById(roomId).orElse(null);
         if (room == null) {
             return false;
         }
         return room.getStatus() == RoomStatus.WAIT;
+    }
+
+    @Transactional
+    public void deleteAllRooms() {
+        roomRepository.deleteAll();
+        log.info("✅ [RoomService] 모든 Room 데이터 삭제 완료");
+    }
+
+    @Transactional
+    public Room getRoomById(int roomId) {
+        return roomRepository.findById(roomId).orElse(null);
+    }
+
+    @Transactional
+    public void updateRoom(Room room) {
+        roomRepository.save(room);
+        log.info("✅ [RoomService] 방 정보 업데이트 완료 (roomId={}, status={})", room.getId(),room.getStatus());
+    }
+
+    public int getMaxCapacity(RoomType roomType) {
+        return (roomType == RoomType.SINGLE) ? maxCapacitySingle : maxCapacityMulti;
     }
 }

@@ -11,7 +11,7 @@ import prography.spring.pingpong.domain.user.model.entity.User;
 @Getter
 @Builder
 public class UserResponseDto {
-    private Long id;
+    private Integer id;
     private Integer fakerId;
     private String name;
     private String email;
@@ -29,7 +29,7 @@ public class UserResponseDto {
                 .fakerId(user.getFakerId())
                 .name(user.getName())
                 .email(user.getEmail())
-                .status(user.getUserstatus())
+                .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

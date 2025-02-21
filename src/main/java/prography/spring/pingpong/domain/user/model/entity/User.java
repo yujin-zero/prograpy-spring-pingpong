@@ -15,14 +15,14 @@ import prography.spring.pingpong.model.entity.UserStatus;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     private Integer fakerId;
     private String name;
     private String email;
 
     @Enumerated(EnumType.STRING)
-    private UserStatus userstatus;
+    private UserStatus status;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

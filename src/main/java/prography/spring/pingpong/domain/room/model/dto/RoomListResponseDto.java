@@ -9,13 +9,13 @@ import org.springframework.data.domain.Page;
 @Builder
 public class RoomListResponseDto {
 
-    private Long totalElements;
+    private Integer totalElements;
     private int totalPages;
     private List<RoomResponseDto> roomList;
 
     public static RoomListResponseDto fromPage(Page<RoomResponseDto> roomPage) {
         return RoomListResponseDto.builder()
-                .totalElements(roomPage.getTotalElements())
+                .totalElements((int) roomPage.getTotalElements())
                 .totalPages(roomPage.getTotalPages())
                 .roomList(roomPage.getContent())
                 .build();
