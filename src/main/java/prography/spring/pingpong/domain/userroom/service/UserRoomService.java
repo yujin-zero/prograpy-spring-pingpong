@@ -1,5 +1,6 @@
 package prography.spring.pingpong.domain.userroom.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import prography.spring.pingpong.domain.userroom.repository.UserRoomRepository;
 import prography.spring.pingpong.model.dto.ApiResponse;
 import prography.spring.pingpong.model.entity.RoomStatus;
 import prography.spring.pingpong.model.entity.Team;
+import prography.spring.pingpong.model.entity.UserStatus;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -34,7 +36,8 @@ public class UserRoomService {
         Room room = validateRoom(roomId);
         User user = validateUser(request.userId());
 
-        if (room == null || user == null || userRoomRepository.existsByUserId(request.userId())) {
+        if (room == null || user == null || userRoomRepository.existsByUserId(request.userId())
+                || user.getStatus() != UserStatus.ACTIVE) {
             return ApiResponse.badRequest();
         }
 
@@ -52,6 +55,9 @@ public class UserRoomService {
                 .team(assignedTeam)
                 .build();
         updateUserRoom(userRoom);
+
+        room.setUpdatedAt(LocalDateTime.now());
+        roomService.updateRoom(room);
 
         log.info("✅ [UserRoomService] 방 참가 완료");
         return ApiResponse.success(null);
@@ -98,11 +104,15 @@ public class UserRoomService {
 
         Team newTeam = (userRoom.getTeam() == Team.RED) ? Team.BLUE : Team.RED;
         if (isTeamChangeAllowed(newTeam, redCount, blueCount, maxCapacity)) {
+            log.error("❌ 팀 변경시 에러2 newTeam={}, redCount={}, blueCount={}, maxCapacity={}",
+                    newTeam, redCount,blueCount, maxCapacity);
             return ApiResponse.badRequest();
         }
 
         userRoom.setTeam(newTeam);
         updateUserRoom(userRoom);
+        room.setUpdatedAt(LocalDateTime.now());
+        roomService.updateRoom(room);
 
         return ApiResponse.success(null);
     }
@@ -120,8 +130,8 @@ public class UserRoomService {
     }
 
     private boolean isTeamChangeAllowed(Team newTeam, long redCount, long blueCount, int maxCapacity) {
-        return !(newTeam == Team.RED && redCount >= maxCapacity / 2) &&
-                !(newTeam == Team.BLUE && blueCount >= maxCapacity / 2);
+        return (newTeam == Team.RED && redCount >= maxCapacity / 2) ||
+                (newTeam == Team.BLUE && blueCount >= maxCapacity / 2);
     }
 
     @Transactional(readOnly = true)
