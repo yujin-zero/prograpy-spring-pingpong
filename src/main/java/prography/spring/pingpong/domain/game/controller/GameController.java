@@ -3,7 +3,6 @@ package prography.spring.pingpong.domain.game.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.service.OperationService;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +19,6 @@ import prography.spring.pingpong.model.dto.ApiResponse;
 public class GameController {
 
     private final GameService gameService;
-    private final OperationService operationBuilder;
 
     @Operation(summary = "게임 시작 API", description = "호스트가 게임을 시작합니다.")
     @PutMapping("/start/{roomId}")

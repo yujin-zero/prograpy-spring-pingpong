@@ -120,9 +120,9 @@ public class RoomService {
         Room room = roomRepository.findById(roomId).orElse(null);
         if (room == null) {
             log.warn("🚨 [RoomService] 존재하지 않는 방 (roomId={})", roomId);
+            return ApiResponse.badRequest();
         }
 
-        assert room != null;
         return ApiResponse.success(RoomDetailResponseDto.fromEntity(room));
     }
 
